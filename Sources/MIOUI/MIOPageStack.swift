@@ -234,6 +234,21 @@ public struct MIOPageStack<ID: Hashable, Page: View>: NSViewControllerRepresenta
             object as? String ?? Coordinator.rootIdentifier
         }
 
+        /// Takes back a page that the page controller kept after it left the path.
+        ///
+        /// The page controller keeps its own cache of view controllers and can
+        /// show one again without asking for it. Such a page is no longer in
+        /// `_hosting_controllers`, so it would miss every refresh and show the
+        /// content it had when it was popped.
+        public func pageController(_ pageController: NSPageController, prepare viewController: NSViewController, with object: Any?)
+        {
+            guard let identifier = object as? String, let hosting_controller = viewController as? NSHostingController<AnyView> else { return }
+            guard _hosting_controllers[identifier] !== hosting_controller else { return }
+
+            _hosting_controllers[identifier] = hosting_controller
+            hosting_controller.rootView = _root_view(for: identifier)
+        }
+
         /// The hosting controller of a page, created the first time it is asked for.
         ///
         /// Its sizing options are emptied so the page takes the size of the

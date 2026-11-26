@@ -65,6 +65,32 @@ final class MIOPageStackTests: XCTestCase
         XCTAssertEqual(Set(requested_ids), [nil, 7, 9])
     }
 
+    func testAPagePushedAgainAfterAPopGetsFreshContent() async throws
+    {
+        var requested_ids: [Int?] = []
+        let coordinator = Coordinator(page: { id in
+            requested_ids.append(id)
+            return Text("\(id ?? 0)")
+        })
+        let controller = _make_controller(coordinator)
+        let window = NSWindow(contentViewController: controller)
+        window.setContentSize(NSSize(width: 320, height: 480))
+
+        coordinator.start([], in: controller)
+        coordinator.show([7], in: controller)
+        try await Task.sleep(for: .seconds(1))
+        coordinator.show([], in: controller)
+        try await Task.sleep(for: .seconds(1))
+        coordinator.show([7], in: controller)
+        try await Task.sleep(for: .seconds(1))
+
+        requested_ids = []
+        coordinator.refresh()
+
+        XCTAssertTrue(requested_ids.contains(7))
+        XCTAssertEqual(controller.selectedIndex, 1)
+    }
+
     func testPushAddsAPage()
     {
         let coordinator = Coordinator(page: { Text("\($0 ?? 0)") })
